@@ -76,22 +76,18 @@ function getProviderItemMetadata(providerName, itemId, callback) {
 	});
 }
 
-function getProvideItemContent(providerName, itemId, callback) {
+function getProvideItemContent(providerName, itemId, response) {
 	var provider = getStorageProvider(providerName);
 	var requestUrl = provider.serviceBaseUrl + "files/" + itemId + "/contents?access_token=" + provider.accessToken;
+	
+	var idArray = itemId.split('~');
+	response.setHeader('Content-disposition', 'attachment; filename=' + idArray[idArray.length - 1]);
+	response.setHeader('Content-Type', 'application/octet-stream');
 	
 	request({
 		url: requestUrl,
 		method: "GET"
-	}, function (error, response, body) {
-		if (error) {
-			console.log(error);
-			callback(error);
-			return;
-		}
-		var idArray = itemId.split('~');
-		callback(null, idArray[idArray.length - 1], body);
-	});
+	}).pipe(response);
 }
 
 function getProviderChildrenMetadata(providerName, itemId, callback) {
@@ -219,12 +215,7 @@ app.patch('/api/me/cloudStorageProviders/:providerName/items/:itemId', function(
 });
 
 app.get('/api/me/cloudStorageProviders/:providerName/items/:itemId/content', function(request, response) {
-	getProvideItemContent(request.params.providerName, request.params.itemId, function(error, fileName, content) {
-		response.setHeader('Content-disposition', 'attachment; filename=' + fileName);
-		response.setHeader('Content-Type', 'application/octet-stream');
-		response.send(content);
-		response.end();
-	});
+	getProvideItemContent(request.params.providerName, request.params.itemId, response);
 });
 
 app.put('/api/me/cloudStorageProviders/:providerName/items/:itemId/content', function(request, response) {
